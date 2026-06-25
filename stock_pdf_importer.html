@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock PDF Importer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F0F4F9;--surface:#fff;--border:#D6E2F0;--border-light:#E8EFF7;
+  --text:#0F1F35;--muted:#5A7394;--faint:#A8BDD4;
+  --accent:#1A5FA8;--accent-light:#E8F0FB;
+  --high:#1A6B3A;--high-bg:#E6F5EC;
+  --low:#B0321A;--low-bg:#FEF0ED;
+}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.icon{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.icon svg{width:19px;height:19px;stroke:#fff;stroke-width:2;fill:none;}
+h1{font-size:20px;font-weight:600;letter-spacing:-0.4px;}
+.sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.step-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:12px;}
+.sup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sup-slot{border:1.5px solid var(--border);border-radius:12px;padding:14px;}
+.sup-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.sup-meta{font-size:11px;color:var(--muted);font-family:"DM Mono",monospace;margin-bottom:10px;}
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all 0.15s;position:relative;background:var(--bg);}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:var(--accent-light);}
+.drop-zone svg{width:20px;height:20px;stroke:var(--faint);stroke-width:1.5;fill:none;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;}
+.drop-zone p{font-size:12px;font-weight:500;color:var(--muted);}
+.drop-zone small{font-size:10px;color:var(--faint);display:block;margin-top:2px;}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-zone.done{border-color:#A8D9BC;background:var(--high-bg);}
+.drop-zone.done p{color:var(--high);font-weight:600;}
+.drop-zone.processing{border-color:var(--accent);background:var(--accent-light);}
+.pb-bg{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden;display:none;}
+.pb{height:100%;background:var(--accent);border-radius:2px;width:0;transition:width 0.3s;}
+.results{display:none;}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.rc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.rc-sup{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.stats{display:flex;gap:6px;margin-bottom:10px;}
+.stat{flex:1;background:var(--bg);border-radius:8px;padding:7px 8px;}
+.stat-n{font-size:18px;font-weight:600;line-height:1;}
+.stat-l{font-size:10px;color:var(--muted);margin-top:2px;}
+.stat.new .stat-n{color:var(--accent);}
+.stat.rem .stat-n{color:var(--low);}
+.new-lbl{font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+.new-list{max-height:120px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;}
+.ni{padding:5px 8px;font-size:11px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;}
+.ni:last-child{border-bottom:none;}
+.ni .q{font-family:"DM Mono",monospace;font-size:10px;color:var(--muted);}
+.actions{display:flex;gap:8px;}
+.btn{flex:1;padding:11px 0;border-radius:10px;border:1.5px solid var(--border);font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface);color:var(--text);}
+.btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn.success{background:var(--high-bg);color:var(--high);border-color:#A8D9BC;}
+.notice{font-size:12px;color:var(--muted);background:var(--accent-light);border-radius:8px;padding:10px 12px;line-height:1.6;border:1px solid var(--border);}
+.notice strong{color:var(--accent);}
+.update-notice{font-size:12px;color:var(--high);background:var(--high-bg);border-radius:8px;padding:10px 12px;margin-top:10px;display:none;line-height:1.7;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;font-size:13px;font-weight:500;padding:9px 20px;border-radius:20px;opacity:0;transition:all 0.22s;pointer-events:none;z-index:100;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <div class="brand">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div><h1>Stock PDF Importer</h1><div class="sub">Drop PDFs → auto-extract → detect new products → update Daily Order</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step-label">Step 1 — Drop each distributor's PDF</div>
+    <div class="sup-grid" id="sup-grid"></div>
+  </div>
+
+  <div class="card results" id="results">
+    <div class="step-label">Step 2 — Review &amp; Update</div>
+    <div class="results-grid" id="results-grid"></div>
+    <div class="actions">
+      <button class="btn primary" id="update-btn" onclick="updateAll()">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Update Daily Order App
+      </button>
+      <button class="btn" onclick="downloadAll()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Excel
+      </button>
+    </div>
+    <div class="update-notice" id="update-notice"></div>
+  </div>
+
+  <div class="notice">
+    <strong>How to use:</strong> Drop the PDF from each distributor into their box. Products are extracted automatically, compared with the previous list to find new products, then saved to the Daily Order app with one tap. Open both files in the same browser.
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+// Suppress fake worker warning — processing still works fine
+const _w = console.warn; console.warn = (...a) => { if(String(a[0]||'').includes('fake worker')) return; _w(...a); };
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+const SUPPLIERS = {
+  kundu:        {name:'Kundu',        color:'#1A6B3A', format:'kundu'},
+  shivam:       {name:'Shivam',       color:'#8B5E00', format:'shivam'},
+  sri_ganapati: {name:'Sri Ganapati', color:'#1A5FA8', format:'sg_ng'},
+  new_ganapati: {name:'New Ganapati', color:'#6B2D8B', format:'sg_ng'}
+};
+
+const state = {};
+for (const k of Object.keys(SUPPLIERS)) state[k] = {parsed:null,diffNew:[],diffRemoved:[],busy:false};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  const grid = document.getElementById('sup-grid');
+  grid.innerHTML = Object.entries(SUPPLIERS).map(([key,meta]) => {
+    const prev = getPrev(key);
+    return `<div class="sup-slot" id="slot-${key}" style="border-color:${meta.color}33">
+      <div class="sup-name" style="color:${meta.color}">${meta.name}</div>
+      <div class="sup-meta" id="meta-${key}">${prev.length ? prev.length+' products saved' : 'No previous data'}</div>
+      <div class="drop-zone" id="dz-${key}">
+        <input type="file" accept=".pdf,.PDF" onchange="handleFile(event,'${key}')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+        <p>Drop PDF / tap to browse</p>
+        <small>.pdf accepted</small>
+      </div>
+      <div class="pb-bg" id="pb-bg-${key}"><div class="pb" id="pb-${key}"></div></div>
+    </div>`;
+  }).join('');
+
+  for (const key of Object.keys(SUPPLIERS)) {
+    const dz = document.getElementById('dz-'+key);
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) processFile(f,key); });
+  }
+}
+
+// ── PROCESS FILE ──────────────────────────────────────────────────────────────
+async function handleFile(e, key) {
+  if (e.target.files[0]) await processFile(e.target.files[0], key);
+}
+
+async function processFile(file, key) {
+  if (state[key].busy) return;
+  state[key].busy = true;
+  const dz=document.getElementById('dz-'+key);
+  const pbBg=document.getElementById('pb-bg-'+key);
+  const pb=document.getElementById('pb-'+key);
+  dz.classList.remove('done'); dz.classList.add('processing');
+  dz.querySelector('p').textContent='Processing…';
+  dz.querySelector('small').textContent=file.name;
+  pbBg.style.display='block'; pb.style.width='5%';
+
+  try {
+    const buf = await file.arrayBuffer();
+    pb.style.width = '15%';
+    const pdfDoc = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise;
+    pb.style.width = '25%';
+
+    const fmt = SUPPLIERS[key].format;
+    const allLines = await extractLines(pdfDoc, fmt);
+    pb.style.width = '65%';
+
+    const parsed = parse(allLines, fmt);
+    pb.style.width = '80%';
+
+    const prev = getPrev(key);
+    const prevSet = new Set(prev.map(p=>p.product.toUpperCase().trim()));
+    const newSet  = new Set(parsed.map(p=>p.product.toUpperCase().trim()));
+    state[key].parsed = parsed;
+    state[key].diffNew = parsed.filter(p=>!prevSet.has(p.product.toUpperCase().trim()));
+    state[key].diffRemoved = prev.filter(p=>!newSet.has(p.product.toUpperCase().trim()));
+    state[key].busy = false;
+    pb.style.width = '100%';
+
+    dz.classList.remove('processing'); dz.classList.add('done');
+    dz.querySelector('p').textContent = `✓ ${parsed.length} products · ${state[key].diffNew.length} new`;
+    document.getElementById('meta-'+key).textContent = parsed.length+' products extracted';
+    showResults();
+    showToast(`✓ ${SUPPLIERS[key].name}: ${parsed.length} products, ${state[key].diffNew.length} new`);
+  } catch(err) {
+    dz.classList.remove('processing');
+    dz.querySelector('p').textContent = '✗ Error — see console';
+    dz.querySelector('small').textContent = err.message;
+    console.error(key, err);
+    state[key].busy = false;
+  }
+  setTimeout(()=>{ pbBg.style.display='none'; pb.style.width='0'; }, 1000);
+}
+
+// ── TEXT EXTRACTION — char-level with gap-based spaces ─────────────────────────
+async function extractLines(pdfDoc, fmt) {
+  const allLines = [];
+  for (let i=1; i<=pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i);
+    const content = await page.getTextContent();
+
+    // Group text items by y-position (bucket to nearest 3px for slight misalignment)
+    const rows = {};
+    for (const item of content.items) {
+      if (!item.str) continue;
+      const y = Math.round(item.transform[5] / 3) * 3;
+      if (!rows[y]) rows[y] = [];
+      rows[y].push({text: item.str, x: item.transform[4], w: item.width});
+    }
+
+    // Sort rows top-to-bottom (higher y = higher on page in PDF coords)
+    for (const y of Object.keys(rows).map(Number).sort((a,b)=>b-a)) {
+      const row = rows[y].sort((a,b)=>a.x-b.x);
+      // Reconstruct line with gap-based spaces (gap > 5pt = space)
+      let line = '';
+      let prevEnd = null;
+      for (const item of row) {
+        if (prevEnd !== null && item.x - prevEnd > 5) line += ' ';
+        line += item.text;
+        prevEnd = item.x + item.w;
+      }
+      line = line.trim();
+      if (line) allLines.push(line);
+    }
+  }
+  return allLines;
+}
+
+// ── PARSERS ───────────────────────────────────────────────────────────────────
+function parse(lines, fmt) {
+  const products = {};
+  const om = {high:0,medium:1,low:2};
+
+  if (fmt === 'kundu') {
+    for (const line of lines) {
+      if (/700\d{3}|@|Phone|GSTIN|BCDA|MARG ERP/i.test(line)) continue;
+      const m = line.match(/^(\d{1,4})\s+(.+?)\s+(\d+)\s*(?:TAB|PCS|SYP|CAP|AMP|INJ|PHY|STP|SACH|VIAL|Pcs|PC|BOX|NASA|PH|NOS)?\s*$/i);
+      if (!m) continue;
+      const [,sno,desc,qStr] = m;
+      if (+sno > 2000) continue;
+      const qty = +qStr;
+      if (!/[A-Za-z]/.test(desc) || desc.length < 3) continue;
+      if (/^(TOTAL|S\.NO|DESCRIPTION|UNIT)$/i.test(desc)) continue;
+      if (/^[A-Z][A-Z\s\.\-\/\(\)&]+$/.test(desc) && !/\d/.test(desc) && desc.length < 45) continue;
+      const k = desc.toUpperCase();
+      if (!products[k] || products[k] < qty) products[k] = qty;
+    }
+
+  } else if (fmt === 'shivam') {
+    for (const line of lines) {
+      if (line.startsWith('-')) continue;
+      const m = line.match(/^(\d{1,3})\s+(.+?)\s+(\d+)\s+(?:PCS|TAB|CAP|SYP|STP|INJ|DROP|GEL|CREAM|SULIN|DROPS?|POWD\w*|RTRIDGE|POSITORY|NASAL\s*DRO)\s*$/i);
+      if (!m) continue;
+      let desc = m[2].trim().replace(/\s+\d+\s+x\s+[\w\.]+\s*$/i,'').replace(/\s+\d+\s*x\s*$/,'').trim();
+      const qty = +m[3];
+      if (!/[A-Za-z]/.test(desc) || desc.length < 3) continue;
+      const k = desc.toUpperCase();
+      if (!products[k] || products[k] < qty) products[k] = qty;
+    }
+
+  } else { // sg_ng — Sri Ganapati & New Ganapati
+    let started = false;
+    for (const line of lines) {
+      if (/Product\s*Name|Current\s*Stock|ProductName|CurrentStock/i.test(line)) { started=true; continue; }
+      if (!started) continue;
+      if (/^(SRIGANPATI|NEWGANPATI|NEW GANPATI|SRI GANPATI|STOCKLIST|MEHTA|WPS|Edit with)/i.test(line)) continue;
+
+      // Grab trailing digits — works for both spaced and non-spaced formats
+      // Use greedy match: name = everything up to last digit group at end
+      const m = line.match(/^(.+?)\s*(\d+)\s*$/);
+      if (!m) continue;
+      const name = m[1].trim();
+      const qty = +m[2];
+      if (qty <= 0 || qty > 99999) continue;
+      if (!/[A-Za-z]/.test(name) || name.length < 3) continue;
+      if (/\d{1,2}-\d{1,2}-\d{4}/.test(name)) continue; // skip date lines
+      const k = name.toUpperCase();
+      if (!products[k] || products[k] < qty) products[k] = qty;
+    }
+  }
+
+  const result = Object.entries(products).map(([k,v]) => {
+    const bucket = v>=100?'high':v>=20?'medium':'low';
+    return {product:k, quantity:v, bucket};
+  });
+  result.sort((a,b)=>(om[a.bucket]-om[b.bucket])||a.product.localeCompare(b.product));
+  return result;
+}
+
+// ── RESULTS ───────────────────────────────────────────────────────────────────
+function showResults() {
+  const hasAny = Object.values(state).some(s=>s.parsed&&s.parsed.length>0);
+  if (!hasAny) return;
+  document.getElementById('results').style.display='block';
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = Object.entries(SUPPLIERS).map(([key,meta])=>{
+    const s = state[key];
+    if (!s.parsed) return `<div class="rc" style="opacity:0.4">
+      <div class="rc-sup" style="color:${meta.color}">${meta.name}</div>
+      <div style="font-size:12px;color:var(--muted)">Not uploaded yet</div>
+    </div>`;
+    const newItems = s.diffNew.slice(0,6).map(p=>
+      `<div class="ni"><span>${escH(p.product)}</span><span class="q">${p.quantity}</span></div>`
+    ).join('') + (s.diffNew.length>6?`<div class="ni" style="color:var(--muted)">+${s.diffNew.length-6} more…</div>`:'');
+    return `<div class="rc">
+      <div class="rc-sup" style="color:${meta.color}">${meta.name}</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-n">${s.parsed.length}</div><div class="stat-l">Total</div></div>
+        <div class="stat new"><div class="stat-n">${s.diffNew.length}</div><div class="stat-l">New</div></div>
+        <div class="stat rem"><div class="stat-n">${s.diffRemoved.length}</div><div class="stat-l">Removed</div></div>
+      </div>
+      ${s.diffNew.length?`<div class="new-lbl">New Products</div><div class="new-list">${newItems}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── UPDATE ────────────────────────────────────────────────────────────────────
+function updateAll() {
+  const updated = [];
+  for (const [key,s] of Object.entries(state)) {
+    if (!s.parsed||!s.parsed.length) continue;
+    localStorage.setItem('ls_stock_'+key, JSON.stringify(s.parsed));
+    localStorage.setItem('ls_new_'+key, JSON.stringify(s.diffNew));
+    localStorage.setItem('ls_stock_ts_'+key, Date.now().toString());
+    updated.push(`${SUPPLIERS[key].name}: ${s.parsed.length} products · ${s.diffNew.length} new`);
+  }
+  if (!updated.length) { showToast('No PDFs uploaded yet'); return; }
+  const btn = document.getElementById('update-btn');
+  btn.className='btn success';
+  btn.innerHTML='<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Updated!';
+  const n = document.getElementById('update-notice');
+  n.style.display='block';
+  n.innerHTML='<strong>✓ Daily Order app updated:</strong><br>'
+    +updated.map(u=>'&nbsp;&nbsp;• '+u).join('<br>')
+    +'<br><br>Switch to the <strong>Daily Order</strong> tab — New Products will show the changes immediately.';
+  showToast('Daily Order updated!');
+}
+
+function downloadAll() {
+  const wb = XLSX.utils.book_new();
+  let any = false;
+  for (const [key,s] of Object.entries(state)) {
+    if (!s.parsed||!s.parsed.length) continue;
+    any = true;
+    XLSX.utils.book_append_sheet(wb,
+      XLSX.utils.json_to_sheet(s.parsed.map(p=>({'Product':p.product,'Quantity':p.quantity}))),
+      SUPPLIERS[key].name);
+    if (s.diffNew.length)
+      XLSX.utils.book_append_sheet(wb,
+        XLSX.utils.json_to_sheet(s.diffNew.map(p=>({'Product':p.product,'Qty':p.quantity}))),
+        SUPPLIERS[key].name+' NEW');
+  }
+  if (!any) { showToast('Nothing to download'); return; }
+  XLSX.writeFile(wb, 'stock_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  showToast('Excel downloaded');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function getPrev(key) {
+  try { const s=localStorage.getItem('ls_stock_'+key); return s?JSON.parse(s):[]; }
+  catch { return []; }
+}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let tt;
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);}
+
+init();
+</script>
+</body>
+</html>
