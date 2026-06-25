@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Order</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F0F4F9;--surface:#fff;--border:#D6E2F0;--border-light:#E8EFF7;
+  --text:#0F1F35;--muted:#5A7394;--faint:#A8BDD4;
+  --accent:#1A5FA8;--accent-light:#E8F0FB;
+  --high:#1A6B3A;--high-bg:#E6F5EC;
+  --low:#B0321A;--low-bg:#FEF0ED;
+}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.icon{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.icon svg{width:19px;height:19px;stroke:#fff;stroke-width:2;fill:none;}
+h1{font-size:20px;font-weight:600;letter-spacing:-0.4px;}
+.sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.step-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:12px;}
+.notice{font-size:12px;color:var(--muted);background:var(--accent-light);border-radius:8px;padding:10px 12px;line-height:1.6;border:1px solid var(--border);}
+.notice strong{color:var(--accent);}
+
+/* Search */
+.search-input{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:"DM Sans",sans-serif;font-size:15px;color:var(--text);background:var(--bg);}
+.search-input:focus{outline:none;border-color:var(--accent);}
+.search-results{display:none;margin-top:14px;}
+.search-results.show{display:block;}
+.src{border:1.5px solid var(--border-light);border-radius:10px;padding:12px;margin-bottom:8px;}
+.src-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;}
+.src-empty{font-size:12px;color:var(--muted);}
+.src-list{max-height:280px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;}
+.src-row{display:flex;justify-content:space-between;gap:8px;padding:6px 9px;font-size:13px;border-bottom:1px solid var(--border-light);}
+.src-row:last-child{border-bottom:none;}
+.src-row .q{font-family:"DM Mono",monospace;font-size:12px;color:var(--muted);white-space:nowrap;}
+.src-row.muted{color:var(--muted);font-size:11px;}
+
+/* New Items */
+.ni-grid{display:flex;flex-direction:column;gap:10px;}
+.ni-card{border:1.5px solid var(--border);border-radius:12px;padding:14px;}
+.ni-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;}
+.ni-name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
+.ni-count{font-size:13px;font-weight:600;color:var(--accent);}
+.ni-meta{font-size:11px;color:var(--faint);margin-bottom:10px;}
+.ni-empty{font-size:12px;color:var(--muted);}
+.ni-list{max-height:260px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;}
+.ni-row{display:flex;justify-content:space-between;gap:8px;padding:6px 9px;font-size:12px;border-bottom:1px solid var(--border-light);}
+.ni-row:last-child{border-bottom:none;}
+.ni-row .q{font-family:"DM Mono",monospace;font-size:11px;color:var(--muted);white-space:nowrap;}
+
+/* Activity Log */
+.log-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.log-toggle .step-label{margin-bottom:0;}
+.log-toggle .arrow{font-size:11px;color:var(--muted);transition:transform 0.15s;}
+.log-toggle.open .arrow{transform:rotate(180deg);}
+.log-body{display:none;margin-top:10px;max-height:240px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;}
+.log-body.open{display:block;}
+.log-row{padding:7px 10px;font-size:11px;font-family:"DM Mono",monospace;border-bottom:1px solid var(--border-light);line-height:1.5;}
+.log-row:last-child{border-bottom:none;}
+.log-row.ok{color:var(--high);}
+.log-row.fail{color:var(--low);}
+.log-row.info{color:var(--muted);}
+.log-time{color:var(--faint);margin-right:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <div class="brand">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div><h1>Daily Order</h1><div class="sub">Read-only — stock from the last PC upload</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step-label">New Items (since last update)</div>
+    <div class="ni-grid" id="ni-grid"></div>
+  </div>
+
+  <div class="card">
+    <div class="step-label">Stock List &amp; Search</div>
+    <input class="search-input" id="search-input" placeholder="Type to filter by product name (leave blank for full list)…" oninput="runSearch()">
+    <div class="search-results show" id="search-results"></div>
+  </div>
+
+  <div class="card">
+    <div class="log-toggle" id="log-toggle" onclick="toggleLog()">
+      <div class="step-label">Activity Log</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
+</div>
+
+<script>
+const GITHUB = { owner:'royakash-cloud', repo:'daily-order-app', branch:'main' };
+
+const SUPPLIERS = {
+  kundu:        {name:'Kundu',        color:'#1A6B3A'},
+  shivam:       {name:'Shivam',       color:'#8B5E00'},
+  sri_ganapati: {name:'Sri Ganapati', color:'#1A5FA8'},
+  new_ganapati: {name:'New Ganapati', color:'#6B2D8B'}
+};
+
+const state = {};
+for (const k of Object.keys(SUPPLIERS)) state[k] = { loaded:false, error:null, products:[], newItems:[], updatedAt:null };
+
+// ── ACTIVITY LOG ─────────────────────────────────────────────────────────────
+function logMsg(kind, text) {
+  const body = document.getElementById('log-body');
+  const row = document.createElement('div');
+  row.className = 'log-row ' + kind;
+  const time = new Date().toLocaleTimeString();
+  row.innerHTML = `<span class="log-time">${time}</span>${escH(text)}`;
+  body.insertBefore(row, body.firstChild);
+}
+function toggleLog() {
+  document.getElementById('log-toggle').classList.toggle('open');
+  document.getElementById('log-body').classList.toggle('open');
+}
+
+// ── FETCH DATA (no token — public read-only) ────────────────────────────────
+async function fetchDistributor(key) {
+  const name = SUPPLIERS[key].name;
+  const url = `https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}/${GITHUB.branch}/data/${key}.json?t=${Date.now()}`;
+
+  logMsg('info', `Fetching ${name} data from GitHub…`);
+  try {
+    const res = await fetch(url);
+    if (res.status === 404) {
+      state[key].loaded = true;
+      state[key].error = null;
+      logMsg('info', `${name}: no saved data found yet — nothing has been uploaded for it from the PC.`);
+      renderNewItems();
+      return;
+    }
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const data = await res.json();
+
+    state[key].loaded = true;
+    state[key].error = null;
+    state[key].products = data.products;
+    state[key].newItems = data.newItems;
+    state[key].updatedAt = data.updatedAt;
+
+    logMsg('ok', `${name}: fetched successfully — ${data.products.length} products, ${data.newItems.length} new.`);
+  } catch (err) {
+    state[key].loaded = true;
+    state[key].error = err.message;
+    logMsg('fail', `${name}: GitHub read failed — ${err.message}. Check your internet connection, or that the PC has saved data at least once.`);
+  }
+  renderNewItems();
+  runSearch();
+}
+
+// ── NEW ITEMS ─────────────────────────────────────────────────────────────────
+function renderNewItems() {
+  const grid = document.getElementById('ni-grid');
+  grid.innerHTML = Object.entries(SUPPLIERS).map(([key,meta]) => {
+    const s = state[key];
+    if (!s.loaded) {
+      return `<div class="ni-card" style="border-color:${meta.color}33">
+        <div class="ni-name" style="color:${meta.color}">${meta.name}</div>
+        <div class="ni-empty">Loading…</div>
+      </div>`;
+    }
+    if (s.error) {
+      return `<div class="ni-card" style="border-color:${meta.color}33">
+        <div class="ni-name" style="color:${meta.color}">${meta.name}</div>
+        <div class="ni-empty">Could not load — see Activity Log.</div>
+      </div>`;
+    }
+    if (!s.updatedAt) {
+      return `<div class="ni-card" style="border-color:${meta.color}33">
+        <div class="ni-name" style="color:${meta.color}">${meta.name}</div>
+        <div class="ni-empty">No data saved yet for this distributor.</div>
+      </div>`;
+    }
+    const when = new Date(s.updatedAt).toLocaleString();
+    if (!s.newItems.length) {
+      return `<div class="ni-card" style="border-color:${meta.color}33">
+        <div class="ni-head"><div class="ni-name" style="color:${meta.color}">${meta.name}</div></div>
+        <div class="ni-meta">${s.products.length} total products · updated ${escH(when)}</div>
+        <div class="ni-empty">No new items since last update.</div>
+      </div>`;
+    }
+    const rows = s.newItems.map(p =>
+      `<div class="ni-row"><span>${escH(p.product)}</span><span class="q">${p.quantity}</span></div>`
+    ).join('');
+    const firstSaveNote = s.newItems.length === s.products.length
+      ? '<div class="ni-empty" style="margin-bottom:6px">First save for this distributor — everything counts as new.</div>' : '';
+    return `<div class="ni-card" style="border-color:${meta.color}33">
+      <div class="ni-head">
+        <div class="ni-name" style="color:${meta.color}">${meta.name}</div>
+        <div class="ni-count">${s.newItems.length} new</div>
+      </div>
+      <div class="ni-meta">${s.products.length} total products · updated ${escH(when)}</div>
+      ${firstSaveNote}
+      <div class="ni-list">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── SEARCH / FULL STOCK LIST ──────────────────────────────────────────────────
+function runSearch() {
+  const input = document.getElementById('search-input');
+  const resultsEl = document.getElementById('search-results');
+  const q = input.value.trim().toUpperCase();
+
+  resultsEl.innerHTML = Object.entries(SUPPLIERS).map(([key,meta]) => {
+    const s = state[key];
+    if (!s.loaded) {
+      return `<div class="src"><div class="src-name" style="color:${meta.color}">${meta.name}</div><div class="src-empty">Still loading…</div></div>`;
+    }
+    if (s.error) {
+      return `<div class="src"><div class="src-name" style="color:${meta.color}">${meta.name}</div><div class="src-empty">Could not load this distributor's data.</div></div>`;
+    }
+    if (!s.updatedAt) {
+      return `<div class="src"><div class="src-name" style="color:${meta.color}">${meta.name}</div><div class="src-empty">No data saved yet for this distributor.</div></div>`;
+    }
+    const matches = q ? s.products.filter(p=>p.product.includes(q)) : s.products;
+    if (!matches.length) {
+      return `<div class="src"><div class="src-name" style="color:${meta.color}">${meta.name}</div><div class="src-empty">${q ? 'Not available' : 'No products'}</div></div>`;
+    }
+    const rows = matches.map(p=>`<div class="src-row"><span>${escH(p.product)}</span><span class="q">${p.quantity}</span></div>`).join('');
+    return `<div class="src"><div class="src-name" style="color:${meta.color}">${meta.name} <span style="color:var(--muted);font-weight:400">(${matches.length})</span></div><div class="src-list">${rows}</div></div>`;
+  }).join('');
+}
+
+function init() {
+  renderNewItems();
+  logMsg('info', 'Loading stock data for all 4 distributors…');
+  for (const key of Object.keys(SUPPLIERS)) fetchDistributor(key);
+}
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+init();
+</script>
+</body>
+</html>
