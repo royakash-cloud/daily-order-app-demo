@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Order — Upload (PC only)</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F0F4F9;--surface:#fff;--border:#D6E2F0;--border-light:#E8EFF7;
+  --text:#0F1F35;--muted:#5A7394;--faint:#A8BDD4;
+  --accent:#1A5FA8;--accent-light:#E8F0FB;
+  --high:#1A6B3A;--high-bg:#E6F5EC;
+  --low:#B0321A;--low-bg:#FEF0ED;
+}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.icon{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.icon svg{width:19px;height:19px;stroke:#fff;stroke-width:2;fill:none;}
+h1{font-size:20px;font-weight:600;letter-spacing:-0.4px;}
+.sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.step-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:12px;}
+.sup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sup-slot{border:1.5px solid var(--border);border-radius:12px;padding:14px;}
+.sup-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.sup-meta{font-size:11px;color:var(--muted);font-family:"DM Mono",monospace;margin-bottom:10px;}
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all 0.15s;position:relative;background:var(--bg);}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:var(--accent-light);}
+.drop-zone svg{width:20px;height:20px;stroke:var(--faint);stroke-width:1.5;fill:none;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;}
+.drop-zone p{font-size:12px;font-weight:500;color:var(--muted);}
+.drop-zone small{font-size:10px;color:var(--faint);display:block;margin-top:2px;}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-zone.done{border-color:#A8D9BC;background:var(--high-bg);}
+.drop-zone.done p{color:var(--high);font-weight:600;}
+.drop-zone.processing{border-color:var(--accent);background:var(--accent-light);}
+.drop-zone.error{border-color:#E8B4A8;background:var(--low-bg);}
+.drop-zone.error p{color:var(--low);font-weight:600;}
+.pb-bg{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden;display:none;}
+.pb{height:100%;background:var(--accent);border-radius:2px;width:0;transition:width 0.3s;}
+.results{display:none;}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.rc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.rc-sup{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.stats{display:flex;gap:6px;margin-bottom:10px;}
+.stat{flex:1;background:var(--bg);border-radius:8px;padding:7px 8px;}
+.stat-n{font-size:18px;font-weight:600;line-height:1;}
+.stat-l{font-size:10px;color:var(--muted);margin-top:2px;}
+.filter-input{width:100%;padding:7px 9px;margin-bottom:8px;border:1.5px solid var(--border);border-radius:8px;font-family:"DM Sans",sans-serif;font-size:12px;color:var(--text);background:var(--bg);}
+.filter-input:focus{outline:none;border-color:var(--accent);}
+.plist{max-height:280px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;}
+.pi{padding:5px 8px;font-size:11px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;gap:8px;}
+.pi:last-child{border-bottom:none;}
+.pi .q{font-family:"DM Mono",monospace;font-size:10px;color:var(--muted);white-space:nowrap;}
+.notice{font-size:12px;color:var(--muted);background:var(--accent-light);border-radius:8px;padding:10px 12px;line-height:1.6;border:1px solid var(--border);}
+.notice strong{color:var(--accent);}
+.token-row{display:flex;gap:8px;}
+.token-row input{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:"DM Mono",monospace;font-size:12px;color:var(--text);background:var(--bg);}
+.token-row input:focus{outline:none;border-color:var(--accent);}
+.token-status{font-size:11px;color:var(--muted);margin-top:6px;}
+.token-status.set{color:var(--high);}
+.btn{padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);font-family:"DM Sans",sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text);}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+.save-row{display:flex;align-items:center;gap:10px;margin:10px 0;}
+.save-status{font-size:11px;color:var(--muted);line-height:1.5;}
+.save-status.ok{color:var(--high);}
+.save-status.fail{color:var(--low);}
+/* Activity Log */
+.log-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.log-toggle .step-label{margin-bottom:0;}
+.log-toggle .arrow{font-size:11px;color:var(--muted);transition:transform 0.15s;}
+.log-toggle.open .arrow{transform:rotate(180deg);}
+.log-body{display:none;margin-top:10px;max-height:240px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;}
+.log-body.open{display:block;}
+.log-row{padding:7px 10px;font-size:11px;font-family:"DM Mono",monospace;border-bottom:1px solid var(--border-light);line-height:1.5;}
+.log-row:last-child{border-bottom:none;}
+.log-row.ok{color:var(--high);}
+.log-row.fail{color:var(--low);}
+.log-row.info{color:var(--muted);}
+.log-time{color:var(--faint);margin-right:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <div class="brand">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div><h1>Upload &amp; Parse</h1><div class="sub">PC-only step — drop each distributor's PDF to check parsing</div></div>
+    </div>
+  </div>
+
+  <div class="notice">
+    <strong>How this works:</strong> paste your GitHub token below (used only
+    for this browser tab — never saved anywhere), drop each distributor's PDF,
+    then tap "Save to GitHub" on each one. Closing or refreshing this page
+    clears the token immediately.
+  </div>
+
+  <div class="card">
+    <div class="step-label">GitHub Token (this session only)</div>
+    <div class="token-row">
+      <input type="password" id="gh-token" placeholder="Paste your fine-grained GitHub token here" oninput="onTokenInput()" autocomplete="off">
+    </div>
+    <div class="token-status" id="token-status">Not set — saving to GitHub is disabled until you paste a token.</div>
+  </div>
+
+  <div class="card">
+    <div class="step-label">Drop each distributor's PDF</div>
+    <div class="sup-grid" id="sup-grid"></div>
+  </div>
+
+  <div class="card results" id="results">
+    <div class="step-label">Extracted Products</div>
+    <div class="results-grid" id="results-grid"></div>
+  </div>
+
+  <div class="card">
+    <div class="log-toggle" id="log-toggle" onclick="toggleLog()">
+      <div class="step-label">Activity Log</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+// Suppress fake worker warning — processing still works fine
+const _w = console.warn; console.warn = (...a) => { if(String(a[0]||'').includes('fake worker')) return; _w(...a); };
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+const SUPPLIERS = {
+  kundu:        {name:'Kundu',        color:'#1A6B3A', format:'kundu'},
+  shivam:       {name:'Shivam',       color:'#8B5E00', format:'shivam'},
+  sri_ganapati: {name:'Sri Ganapati', color:'#1A5FA8', format:'sg_ng'},
+  new_ganapati: {name:'New Ganapati', color:'#6B2D8B', format:'sg_ng'}
+};
+
+const GITHUB = { owner:'royakash-cloud', repo:'daily-order-app', branch:'main' };
+const ANOMALY_THRESHOLD = 0.4; // warn if count changes by more than 40% vs last save
+
+const state = {};
+for (const k of Object.keys(SUPPLIERS)) state[k] = {parsed:null, busy:false};
+
+// ── GITHUB TOKEN — kept only in memory, never saved ─────────────────────────
+let sessionToken = '';
+function onTokenInput() {
+  sessionToken = document.getElementById('gh-token').value.trim();
+  const status = document.getElementById('token-status');
+  if (sessionToken) {
+    status.textContent = 'Token set for this session — will be forgotten if you close or refresh this page.';
+    status.classList.add('set');
+  } else {
+    status.textContent = 'Not set — saving to GitHub is disabled until you paste a token.';
+    status.classList.remove('set');
+  }
+}
+
+// ── GITHUB API HELPERS ───────────────────────────────────────────────────────
+function ghHeaders() {
+  return {
+    'Authorization': `Bearer ${sessionToken}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+}
+function b64Encode(str) {
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_,p)=>String.fromCharCode('0x'+p)));
+}
+function b64Decode(str) {
+  return decodeURIComponent(atob(str).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+async function ghGetFile(path) {
+  const url = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${path}?ref=${GITHUB.branch}`;
+  const res = await fetch(url, { headers: ghHeaders() });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const body = await res.json().catch(()=>({}));
+    throw new Error(`GitHub read failed (status ${res.status}) — ${body.message || res.statusText}`);
+  }
+  const data = await res.json();
+  return { sha: data.sha, content: JSON.parse(b64Decode(data.content)) };
+}
+async function ghPutFile(path, contentObj, sha, message) {
+  const url = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${path}`;
+  const body = {
+    message,
+    content: b64Encode(JSON.stringify(contentObj, null, 2)),
+    branch: GITHUB.branch
+  };
+  if (sha) body.sha = sha;
+  const res = await fetch(url, { method:'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  if (!res.ok) {
+    const errBody = await res.json().catch(()=>({}));
+    throw new Error(`GitHub write failed (status ${res.status}) — ${errBody.message || res.statusText}`);
+  }
+  return res.json();
+}
+
+// ── ACTIVITY LOG ─────────────────────────────────────────────────────────────
+function logMsg(kind, text) {
+  const body = document.getElementById('log-body');
+  const row = document.createElement('div');
+  row.className = 'log-row ' + kind;
+  const time = new Date().toLocaleTimeString();
+  row.innerHTML = `<span class="log-time">${time}</span>${escH(text)}`;
+  body.insertBefore(row, body.firstChild);
+}
+function toggleLog() {
+  document.getElementById('log-toggle').classList.toggle('open');
+  document.getElementById('log-body').classList.toggle('open');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  const grid = document.getElementById('sup-grid');
+  grid.innerHTML = Object.entries(SUPPLIERS).map(([key,meta]) => {
+    return `<div class="sup-slot" id="slot-${key}" style="border-color:${meta.color}33">
+      <div class="sup-name" style="color:${meta.color}">${meta.name}</div>
+      <div class="sup-meta" id="meta-${key}">No PDF uploaded yet</div>
+      <div class="drop-zone" id="dz-${key}">
+        <input type="file" accept=".pdf,.PDF" onchange="handleFile(event,'${key}')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+        <p>Drop PDF / tap to browse</p>
+        <small>.pdf accepted</small>
+      </div>
+      <div class="pb-bg" id="pb-bg-${key}"><div class="pb" id="pb-${key}"></div></div>
+    </div>`;
+  }).join('');
+
+  for (const key of Object.keys(SUPPLIERS)) {
+    const dz = document.getElementById('dz-'+key);
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) processFile(f,key); });
+  }
+
+  logMsg('info', 'Ready. Paste your GitHub token, then drop a PDF into any distributor box.');
+}
+
+// ── PROCESS FILE ──────────────────────────────────────────────────────────────
+async function handleFile(e, key) {
+  if (e.target.files[0]) await processFile(e.target.files[0], key);
+}
+
+async function processFile(file, key) {
+  if (state[key].busy) return;
+  state[key].busy = true;
+  const name = SUPPLIERS[key].name;
+  const dz=document.getElementById('dz-'+key);
+  const pbBg=document.getElementById('pb-bg-'+key);
+  const pb=document.getElementById('pb-'+key);
+  dz.classList.remove('done','error'); dz.classList.add('processing');
+  dz.querySelector('p').textContent='Processing…';
+  dz.querySelector('small').textContent=file.name;
+  pbBg.style.display='block'; pb.style.width='5%';
+
+  logMsg('info', `Parsing ${name} PDF: ${file.name}`);
+
+  try {
+    const buf = await file.arrayBuffer();
+    pb.style.width = '15%';
+    const pdfDoc = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise;
+    pb.style.width = '25%';
+
+    const fmt = SUPPLIERS[key].format;
+    const allLines = await extractLines(pdfDoc, fmt);
+    pb.style.width = '65%';
+
+    const parsed = parse(allLines, fmt);
+    pb.style.width = '90%';
+
+    state[key].parsed = parsed;
+    state[key].busy = false;
+    pb.style.width = '100%';
+
+    if (parsed.length === 0) {
+      dz.classList.remove('processing'); dz.classList.add('error');
+      dz.querySelector('p').textContent = '✗ No products found';
+      document.getElementById('meta-'+key).textContent = '0 products extracted';
+      logMsg('fail', `Found 0 products in "${file.name}" — check that this is a ${name}-format PDF, not one of the other three distributors' formats. If it is the right format, the PDF's text layout may have changed.`);
+    } else {
+      dz.classList.remove('processing'); dz.classList.add('done');
+      dz.querySelector('p').textContent = `✓ ${parsed.length} products`;
+      document.getElementById('meta-'+key).textContent = parsed.length+' products extracted';
+      logMsg('ok', `Extracted ${parsed.length} products from ${name} PDF "${file.name}"`);
+    }
+    showResults();
+  } catch(err) {
+    dz.classList.remove('processing'); dz.classList.add('error');
+    dz.querySelector('p').textContent = '✗ Error — see Activity Log';
+    state[key].busy = false;
+    logMsg('fail', `Could not read "${file.name}" as a ${name} PDF — ${err.message}`);
+  }
+  setTimeout(()=>{ pbBg.style.display='none'; pb.style.width='0'; }, 1000);
+}
+
+// ── TEXT EXTRACTION — char-level with gap-based spaces ─────────────────────────
+// Ported as-is from stock_pdf_importer.html — do not rewrite, this already
+// handles the WPS-generated Sri Ganapati / New Ganapati spacing quirks.
+async function extractLines(pdfDoc, fmt) {
+  const allLines = [];
+  for (let i=1; i<=pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i);
+    const content = await page.getTextContent();
+
+    const rows = {};
+    for (const item of content.items) {
+      if (!item.str) continue;
+      const y = Math.round(item.transform[5] / 3) * 3;
+      if (!rows[y]) rows[y] = [];
+      rows[y].push({text: item.str, x: item.transform[4], w: item.width});
+    }
+
+    for (const y of Object.keys(rows).map(Number).sort((a,b)=>b-a)) {
+      const row = rows[y].sort((a,b)=>a.x-b.x);
+      let line = '';
+      let prevEnd = null;
+      for (const item of row) {
+        if (prevEnd !== null && item.x - prevEnd > 5) line += ' ';
+        line += item.text;
+        prevEnd = item.x + item.w;
+      }
+      line = line.trim();
+      if (line) allLines.push(line);
+    }
+  }
+  return allLines;
+}
+
+// ── PARSERS ───────────────────────────────────────────────────────────────────
+// Ported as-is from stock_pdf_importer.html — distributor-specific regex
+// rules, do not rewrite.
+function parse(lines, fmt) {
+  const products = {};
+  const om = {high:0,medium:1,low:2};
+
+  if (fmt === 'kundu') {
+    for (const line of lines) {
+      if (/700\d{3}|@|Phone|GSTIN|BCDA|MARG ERP/i.test(line)) continue;
+      const m = line.match(/^(\d{1,4})\s+(.+?)\s+(\d+)\s*(?:TAB|PCS|SYP|CAP|AMP|INJ|PHY|STP|SACH|VIAL|Pcs|PC|BOX|NASA|PH|NOS)?\s*$/i);
+      if (!m) continue;
+      const [,sno,desc,qStr] = m;
+      if (+sno > 2000) continue;
+      const qty = +qStr;
+      if (!/[A-Za-z]/.test(desc) || desc.length < 3) continue;
+      if (/^(TOTAL|S\.NO|DESCRIPTION|UNIT)$/i.test(desc)) continue;
+      if (/^[A-Z][A-Z\s\.\-\/\(\)&]+$/.test(desc) && !/\d/.test(desc) && desc.length < 45) continue;
+      const k = desc.toUpperCase();
+      if (!products[k] || products[k] < qty) products[k] = qty;
+    }
+
+  } else if (fmt === 'shivam') {
+    for (const line of lines) {
+      if (line.startsWith('-')) continue;
+      const m = line.match(/^(\d{1,3})\s+(.+?)\s+(\d+)\s+(?:PCS|TAB|CAP|SYP|STP|INJ|DROP|GEL|CREAM|SULIN|DROPS?|POWD\w*|RTRIDGE|POSITORY|NASAL\s*DRO)\s*$/i);
+      if (!m) continue;
+      let desc = m[2].trim().replace(/\s+\d+\s+x\s+[\w\.]+\s*$/i,'').replace(/\s+\d+\s*x\s*$/,'').trim();
+      const qty = +m[3];
+      if (!/[A-Za-z]/.test(desc) || desc.length < 3) continue;
+      const k = desc.toUpperCase();
+      if (!products[k] || products[k] < qty) products[k] = qty;
+    }
+
+  } else { // sg_ng — Sri Ganapati & New Ganapati
+    let started = false;
+    for (const line of lines) {
+      if (/Product\s*Name|Current\s*Stock|ProductName|CurrentStock/i.test(line)) { started=true; continue; }
+      if (!started) continue;
+      if (/^(SRIGANPATI|NEWGANPATI|NEW GANPATI|SRI GANPATI|STOCKLIST|MEHTA|WPS|Edit with)/i.test(line)) continue;
+
+      const m = line.match(/^(.+?)\s*(\d+)\s*$/);
+      if (!m) continue;
+      const name = m[1].trim();
+      const qty = +m[2];
+      if (qty <= 0 || qty > 99999) continue;
+      if (!/[A-Za-z]/.test(name) || name.length < 3) continue;
+      if (/\d{1,2}-\d{1,2}-\d{4}/.test(name)) continue; // skip date lines
+      if (/([A-Za-z])\1{4,}/.test(name)) continue; // skip watermark/footer junk e.g. "ZZZZZZ 15181"
+      const k = name.toUpperCase();
+      if (!products[k] || products[k] < qty) products[k] = qty;
+    }
+  }
+
+  const result = Object.entries(products).map(([k,v]) => {
+    const bucket = v>=100?'high':v>=20?'medium':'low';
+    return {product:k, quantity:v, bucket};
+  });
+  result.sort((a,b)=>(om[a.bucket]-om[b.bucket])||a.product.localeCompare(b.product));
+  return result;
+}
+
+// ── RESULTS ───────────────────────────────────────────────────────────────────
+function showResults() {
+  const hasAny = Object.values(state).some(s=>s.parsed&&s.parsed.length>0);
+  if (!hasAny) return;
+  document.getElementById('results').style.display='block';
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = Object.entries(SUPPLIERS).map(([key,meta])=>{
+    const s = state[key];
+    if (!s.parsed) return `<div class="rc" style="opacity:0.4">
+      <div class="rc-sup" style="color:${meta.color}">${meta.name}</div>
+      <div style="font-size:12px;color:var(--muted)">Not uploaded yet</div>
+    </div>`;
+    return `<div class="rc">
+      <div class="rc-sup" style="color:${meta.color}">${meta.name}</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-n">${s.parsed.length}</div><div class="stat-l">Total products</div></div>
+      </div>
+      <div class="save-row">
+        <button class="btn primary" id="save-btn-${key}" onclick="saveToGitHub('${key}')">Save to GitHub</button>
+      </div>
+      <div class="save-status" id="save-status-${key}"></div>
+      <input class="filter-input" id="filter-${key}" placeholder="Type a product name to spot-check…" oninput="renderList('${key}')">
+      <div class="plist" id="plist-${key}"></div>
+    </div>`;
+  }).join('');
+  for (const key of Object.keys(SUPPLIERS)) renderList(key);
+}
+
+function renderList(key) {
+  const box = document.getElementById('plist-'+key);
+  if (!box) return;
+  const s = state[key];
+  const filterEl = document.getElementById('filter-'+key);
+  const q = filterEl ? filterEl.value.trim().toUpperCase() : '';
+  const list = q ? s.parsed.filter(p=>p.product.includes(q)) : s.parsed;
+  if (!list.length) {
+    box.innerHTML = `<div class="pi" style="color:var(--muted)">No match for "${escH(q)}"</div>`;
+    return;
+  }
+  box.innerHTML = list.map(p=>
+    `<div class="pi"><span>${escH(p.product)}</span><span class="q">${p.quantity}</span></div>`
+  ).join('');
+}
+
+// ── SAVE TO GITHUB ───────────────────────────────────────────────────────────
+async function saveToGitHub(key) {
+  const name = SUPPLIERS[key].name;
+  const s = state[key];
+  const btn = document.getElementById('save-btn-'+key);
+  const statusEl = document.getElementById('save-status-'+key);
+
+  if (!sessionToken) {
+    statusEl.className = 'save-status fail';
+    statusEl.textContent = 'Cannot save — paste your GitHub token first (above).';
+    logMsg('fail', `Save blocked for ${name} — no GitHub token has been entered yet.`);
+    return;
+  }
+  if (!s.parsed || !s.parsed.length) return;
+
+  btn.disabled = true;
+  statusEl.className = 'save-status';
+  statusEl.textContent = 'Saving…';
+  const path = `data/${key}.json`;
+
+  try {
+    logMsg('info', `Checking previous saved data for ${name} on GitHub…`);
+    const prev = await ghGetFile(path);
+    const prevProducts = prev ? prev.content.products : [];
+    const oldCount = prevProducts.length;
+    const newCount = s.parsed.length;
+
+    if (oldCount > 0) {
+      const pctChange = Math.abs(newCount - oldCount) / oldCount;
+      if (pctChange > ANOMALY_THRESHOLD) {
+        const pctStr = Math.round(pctChange * 100);
+        logMsg('fail', `${name}: new count (${newCount}) is ${pctStr}% different from last saved count (${oldCount}) — asking for confirmation before saving.`);
+        const proceed = confirm(
+          `${name}: this PDF has ${newCount} products, but the last save had ${oldCount} ` +
+          `(a ${pctStr}% change). This usually means the PDF format changed or the wrong ` +
+          `file was uploaded.\n\nSave anyway? Your last good data will be permanently replaced.`
+        );
+        if (!proceed) {
+          logMsg('info', `Save cancelled for ${name} — previous good data on GitHub was kept unchanged.`);
+          statusEl.className = 'save-status fail';
+          statusEl.textContent = 'Cancelled — previous saved data was kept unchanged.';
+          btn.disabled = false;
+          return;
+        }
+        logMsg('info', `${name}: save confirmed despite the count change — proceeding.`);
+      }
+    } else {
+      logMsg('info', `No previous data found for ${name} on GitHub — this will be the first save.`);
+    }
+
+    const prevSet = new Set(prevProducts.map(p=>p.product));
+    const newItems = s.parsed.filter(p=>!prevSet.has(p.product));
+
+    const payload = {
+      distributor: name,
+      updatedAt: new Date().toISOString(),
+      products: s.parsed,
+      newItems: newItems
+    };
+
+    await ghPutFile(path, payload, prev ? prev.sha : null, `Update ${name} stock — ${new Date().toLocaleDateString()}`);
+
+    statusEl.className = 'save-status ok';
+    statusEl.textContent = `Saved ✓ ${newCount} products, ${newItems.length} new (just now)`;
+    logMsg('ok', `Saved ${name} to GitHub successfully — ${newCount} products, ${newItems.length} new.`);
+  } catch (err) {
+    statusEl.className = 'save-status fail';
+    let msg = err.message;
+    if (/401|403/.test(msg)) msg += ' — check your token is correct, not expired, and has write access to this repo.';
+    statusEl.textContent = msg;
+    logMsg('fail', `GitHub save failed for ${name} — ${msg}`);
+  }
+  btn.disabled = false;
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+init();
+</script>
+</body>
+</html>
